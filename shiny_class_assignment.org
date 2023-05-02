@@ -424,20 +424,16 @@ the app without excessive scrolling.
   ui <- fluidPage(
     sidebarLayout(
       sidebarPanel(
-        selectInput(inputId="x", label="X-var", choices=names(mtcars)),
-        selectInput(inputId="y", label="Y-var", choices=names(mtcars))
+      
       ),
 
       mainPanel(
-        plotOutput("plot_out")
+      
       )
     )
   )
 
   server <- function(input, output) {
-    output$plot_out <- output$plot_out <- renderPlot({
-      plot(x=mtcars[,input$x], y=mtcars[,input$y])
-    })
 
     onSessionEnded(function() {stopApp()})
   }
