@@ -451,6 +451,7 @@ for Reporting? A Complete Guide. Retrieved April 25, 2023, from
 https://www.dataversity.net/why-use-interactive-financial-dashboards-for-reporting-a-complete-guide/
 
 [fn:2] - Book on Shiny
+
 Wickham, H. (2021, April). /Mastering Shiny/. https://mastering-shiny.org/
 
 ** Software
