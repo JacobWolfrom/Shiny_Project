@@ -1,0 +1,485 @@
+#+TITLE: Reactivity in Shiny
+#+SUBTITLE: Intro to Advanced Data Science
+#+AUTHOR: Jacob Wolfrom, Balah Muhammad (pledged)
+#+PROPERTY: header-args:R :session *R* :results output
+#+STARTUP: overview hideblocks indent
+
+DO NOT USE C-v-b (org-babel-execute-buffer) UNDER ANY CIRCUMSTANCES! I
+DON'T KNOW WHAT IT WILL DO AND I DO NOT WANT TO TEST FATE! -Jacob
+
+* Load ~shiny~
+#+begin_src R :results silent
+  library(shiny)
+#+end_src
+
+* Why Use ~shiny~?
+A significant problem in business is the accurate and efficient
+communication of data. This communication is vitally important for
+quickly making data-driven decisions that will impact the future of a
+business. That is why interactive dashboards were created, to
+communicate data and analysis across an organization.
+
+With an interactive dashboard, anyone with access to the dashboard can
+query it for data and its relations. This allows a user to use their
+own domain knowledge to perform basic analyses of data quickly without
+having to scour through a spreedsheet or interrupt the workflow of a
+data analyst. This allows for a business to run faster and more
+efficiently. [fn:1]
+
+~shiny~ is a package for R that implements many features to help
+trivialize many parts of making an interactive dashboard all from
+R. This allows a data scientist to easily create customizeable
+interactive dashboards without needed to leave their native
+environment as it can function directly from R.
+
+With a bit of practice, ~shiny~ makes creating personally tailored
+interactive dashboards from R incredibly simple.
+
+If you want to learn more about ~shiny~ there is a free online book
+called /Mastering Shiny/ [fn:2]
+
+* Basic ~shiny~ Model
+The basic model of ~shiny~ relies on a few key principles:
+** UI
+The ui for a ~shiny~ web app is created by a series of functions
+that convert R code to HTML. This is all handled by the package
+itself; you don't need to learn any HTML to use ~shiny~. Admittedly,
+knowledge of HTML and CSS is useful for a number of reasons, but it
+is by no means required.
+
+** Server
+The server contains all of the actual functionality of the app. The
+server maintains the ~input~, ~output~, and ~session~ variables and
+the functionality involving them such as taking input data and
+outputting the plot of the data or tracking user information with
+~session~[fn:3].
+
+These variables themselves are ~lists~ of reactive values (explained
+later) and whenever a new variable such as a ui element is created, it
+is added to one of the corresponding lists. i.e. a ~sliderInput~
+object will be stored as an element of the ~input~ list.
+
+~shiny~ also includes a suite of functions to take R data types or
+expressions and renders them into a form that is suitable to be
+converted into HTML such as ~renderPlot~ and ~renderPrint~.
+
+** Reactive Evaluation
+~shiny~ allows for dynamic web apps by utilizing a design philosophy
+known as reactive evaluation. The user defines reactive expressions
+(surrounded by {}) that rely on reactive values such as ~input~,
+~output~, and ~session~.
+
+When the app starts, it stores the definition of all reactive
+variables and expressions as well as all reactive variables that an
+expression depends on. The app then begins a loop where it checks
+every reactive variable to see if it has been changed using the
+~identical~ function[fn:4]. If a variable has changed, the expressions
+or variable depending on it are invalidatied. This invalidation is
+then resolved which begins an invalidation chain which invalidates all
+further dependent reactive entities, repeating until total validation.
+
+It is in this way that ~shiny~ smoothly maintains the application.
+
+* TODO ~shiny~ Syntax
+~shiny~ has few different categories of functions that follow specific
+syntax
+** UI Functions
+The ui defintion of a ~shiny~ app requires slightly strange syntax due
+to the fact that it references variables that don't exist yet, namely
+~input~ and ~output~. Because of this, all references to variables
+that would be defined in the server function are instead referenced as
+a character string of the variable's name.
+
+- Input Functions: Run ~args~ on ~numericInput~, ~textInput~, and
+  ~sliderInput~. What do you notice about their arguments?
+  #+begin_src R
+
+  #+end_src
+
+  All input functions have an ~inputId~, ~label~, and ~value~. The
+  ~inputId~ is the name of the ~input~ element, the ~label~ parameter
+  is the label displayed with the element, and the ~value~ parameter
+  is the default value of the input at runtime.
+
+- Output Functions: Run ~args~ on ~plotOutput~, ~textOutput~, and
+  ~verbatimTextOutput~. What do you notice about their arguments?
+  #+begin_src R
+
+  #+end_src
+
+  All output functions have one main parameter: ~outputId~. ~outputId~
+  is the name of the ~output~ element.
+
+- Tag/Structure Functions: Run ~args~ on ~fluidPage~, ~fluidRow~, and
+  ~sidebarLayout~. What do you notice?
+
+  #+begin_src R
+    
+  #+end_src
+
+  Most of the functions have ellipsis arguments with the exception of
+  functions like sidebarLayout that contain other tag/structure
+  functions. The ellipsis can contain any number of ui elements such
+  as sliders or plots. It is often easier to conder these functions
+  not as functions, but as wrappers around ui elements.
+
+** Render Functions
+In order to output reactive information to the ui, the object being
+output must first be rendered with a render function. These functions
+take a reactive expression (an expression including a reactive value
+enclosed by {}) as a parameter, and it simply allows the object to be
+output via the corresponding output function.
+
+Run ~args~ on ~renderPrint~, ~renderPlot~, and ~renderUI~. What do you
+notice about their parameters?
+#+begin_src R
+
+#+end_src
+
+The main parameter for all of these functions is ~expr~ which is the
+reactive expression used to generate the rendered ui element.
+
+Note: If an output is is not reactive such as a prewritten paragraph of text or
+static plot, then it does not need to be rendered if it isn't
+generated by the ~server~ function. It also doesn't need an output
+function as a result. It can simply be added as an argument to a tag
+function like below.
+
+#+begin_example R
+fluidRow(
+  "Hello, World"
+)
+#+end_example
+
+* TODO Running a ~shiny~ app
+A ~shiny~ app can be run a number of different ways, but the way we
+will be implementing is the ~shinyApp~ function.
+
+Run ~args~ on ~shinyApp~.
+#+begin_src R
+
+#+end_src
+
+The only two arguments we care about here are the ~ui~ and ~server~
+arguments.
+
+For now we will be using a minimal ~ui~; simply use a ~fluidPage~
+displaying "Hello, World!"
+#+begin_src R :results none
+
+#+end_src
+
+Next we will use a similarly simple ~server~ function. All server
+functions require ~input~ and ~output~ argument with an optional
+~session~ argument. We will have one function in the server that is
+only there for convenience and to keep the R session from freezing in
+emacs. This should not be used for apps that have multiple users as it
+will close out the app for everyone whenever someone quits out.
+#+begin_src R :results none
+  server <- function(input, output) {
+    onSessionEnded(function() {stopApp()})
+  }
+#+end_src
+
+To run the app, simply run ~shinyApp~ with the ~ui~ and ~server~ as
+arguments.
+#+begin_src R :results none
+  
+#+end_src
+
+Useful Shortcuts: Alt+Tab to switch windows and Ctrl+W to close a tab on the
+browser on Windows devices. These make moving between applications
+much easier.
+
+* Reactive Programming
+There are three main functions in ~shiny~ for programming with
+reactive evaluation. For the most part, the only argument you will
+ever use for any of these functions is the ~expr~ argument which takes
+a reactive expression to run. These all require more than a basic
+understanding of ~shiny~ to use effectively, but they are of vital
+importance for anyone who wants to learn this package for personal or
+professional use.
+** ~isolate~
+~isolate~ is a vital command to understand and have mastery over. The
+~isolate~ function is used to execute commands using reactive values
+without creating any dependencies. For example, you might make a
+function to perform some complicated, time-consuming algorithm with
+some given input, but do not want to create any dependencies or add to
+the reactive graph (where ~shiny~ stores reactive expressions). You
+simply wrap the code in an ~isolate~ block and your problem is
+solved. Additionally, ~isolate~ is useful if you want to run some code
+on app startup, but not be continually updated.
+
+Ultimately, ~isolate~ is very useful because it allows for the
+developer to run code without having to deal with the side effects of
+reactive evaluation.
+
+** ~reactive~
+The ~reactive~ function allows a reactive expression to be stored as a
+variable. The output of ~reactive~ is itself a function, so in order
+to access the contents, the function must be called with ().
+
+#+begin_src R :results none
+  ui <- fluidPage(
+    numericInput("num_in", label="Input Number", value=0),
+    verbatimTextOutput("react_out"),
+    verbatimTextOutput("num_out")
+  )
+
+  server <- function(input, output) {
+    foo <- reactive({ input$num_in * 2 })
+
+    output$react_out <- renderPrint(foo) # foo
+    output$num_out <- renderPrint(foo()) # foo called as a function
+
+    onSessionEnded(function() {stopApp()})
+  }
+
+  shinyApp(ui=ui, server=server)
+#+end_src
+
+** ~observe~
+The ~observe~ function creates an observe object that runs the given
+expression whenever its dependencies are invalidated. This combined
+with the ~bindEvent~ function in the next section allows for a lot of
+versatility in the how different reactive expressions are invalidated
+and run.
+
+#+begin_src R :results none
+      ui <- fluidPage(
+        numericInput("num_in", label="Input Number", value=0),
+        verbatimTextOutput("char_out")
+      )
+
+      server <- function(input, output) {
+        ## This observer allows for the definition of output$char_out to change dependent on input
+        observe({
+          if(is.na(input$num_in)) {
+          } else if(input$num_in > 5) {
+            output$char_out <- renderPrint("> 5") 
+          } else {
+            output$char_out <- renderPrint("<= 5")
+          }
+        })
+
+        onSessionEnded(function() {stopApp()})
+      }
+
+      shinyApp(ui=ui, server=server)
+#+end_src
+
+* Reactivity Issues
+Reactive evaluation is an important concept to keep in mind when
+developing a ~shiny~ app. If you aren't careful, then you may be
+accidentally invalidating an expression that does not need to be
+invalidated. This may be problematic if the expression in question is
+very costly to run like a machine learning algorithm.
+
+Consider two processes, process A and process B. Process B takes a
+considerable amount of time to run.
+
+Suppose that you have an app that lets you chose to run process A or B
+depending on user input and creates a corresponding output. Run the
+following app and try to identify the problem.
+#+begin_src R :results none
+  ui <- sidebarLayout(
+    sidebarPanel(
+      numericInput("num_in", label="Choose a Number", value=0),
+      radioButtons("choice", label="Choose the Process", choices=c("A", "B"),
+                   selected="A", inline=TRUE)
+    ),
+
+    mainPanel(
+      verbatimTextOutput("num_out")
+    )
+  )
+
+  server <- function(input, output) {
+    output$num_out <- renderPrint({
+      choice <- input$choice
+      num <- input$num_in
+
+      if(choice == "A") {
+        return(num + 1)             # Short
+      } else if(choice == "B") {
+        Sys.sleep(1)                # Long
+        return(rep(num, 5)) 
+      }
+    })
+
+    onSessionEnded(function() {stopApp()})
+  }
+
+  shinyApp(ui, server)
+#+end_src
+
+Because of process B, any changes to ~num_in~ with process B selected
+results in the output freezing up until it completes. This is
+especially a problem if the user presses the increment/decrement
+buttons, as the app must calculate each change one after the other
+until it is caught up. This issue can be resloved with the use of
+~bindEvent~ and an ~actionButton~. By having the reactive expression
+bound to the ~actionButton~, it will only invalidate when the button
+is clicked.
+#+begin_src R :results none
+  ui <- sidebarLayout(
+    sidebarPanel(
+      numericInput("num_in", label="Choose a Number", value=0),
+      radioButtons("choice", label="Choose the Process", choices=c("A", "B"),
+                   selected="A", inline=TRUE),
+      actionButton("button", label="Apply")
+    ),
+
+    mainPanel(
+      verbatimTextOutput("num_out")
+    )
+  )
+
+  server <- function(input, output) {
+    foo <- observe({
+      choice <- input$choice
+      num <- input$num_in
+
+      if(choice == "A") {
+        temp <- num * 2             # Short
+      } else if(choice == "B") {
+        Sys.sleep(1)                # Long
+        temp <- rep(num, 5) 
+      }
+
+      output$num_out <- renderPrint({ temp })
+    })
+
+    bindEvent(
+      x=foo,
+      input$button
+    )
+
+    onSessionEnded(function() {stopApp()})
+  }
+
+  shinyApp(ui, server)
+#+end_src
+
+This is just one of many pitfalls to avoid when utilizing reactive
+evaluation. If you plan on using ~shiny~, get used to ~bindEvent~ or
+its equivalents ~observeEvent~ and ~eventReactive~; they are your best
+friends.
+
+* TODO Exercise: Creating an App to plot ~mtcars~
+As an exercise, we will create an app that can take in user input,
+namely features to use, and output a corresponding plot.
+** TODO Creating User ~input~
+  - Look at the structure of ~mtcars~.
+    #+begin_src R
+
+    #+end_src
+
+  - For this we want the user to be able to select predetermined
+    features from the ~mtcars~ data set. The command to do this is the
+    aptly named ~selectInput~. Look at the arguments of ~selectInput~.
+    #+begin_src R
+
+    #+end_src
+
+    We want to create a plot of two variables at a time, so although
+    it is possible to utilize one input and select both, we will want
+    to have two different ~selectInput~ elements for simplicity. Call
+    ~selectInput~ twice in the ~sidebarPanel~ of the ui object with
+    inputId's x and y, then label them. The ~choices~ argument for
+    both of them should include all of the feature names of the
+    ~mtcars~ data frame.
+    
+** TODO Rendering ~output~
+- Next, we will want to create, render, and output the plot. To do so,
+  we will need to create the plot inside a reactive expression, so we
+  can utilize the reactive values in the ~input~ given by the
+  ~selectInput~ functions
+
+  To do this we will start by creating an new element, plot_out, of
+  the ~output~ and setting it equal to a call of ~renderPlot~ within
+  the server function. The argument for the ~renderPlot~ function
+  should be a reactive expression (remember that they are surrounded
+  by {}) containing a function that plots the input features.
+
+  Hint 1: ~input~ and ~output~ are accessed/modified like lists.
+
+  Hint 2: mtcars[*] is a data frame and mtcars[*,*] is a vector (*
+  means any valid value)
+  
+
+- Now that we have the plot rendered as an element of the output, we
+  can now print it to the ui using the ~plotOutput~ function. Call the
+  ~plotOutput~ function in the ~mainPanel~ of the ui.
+  
+** TODO Code the App Here
+This is where you should write the code. Some framework has already
+been created. If you are comfortable switching through windows
+quickly, we recommend creating another frame with C-x 5 2 or
+minimizing Zoom and using C-x 3 to split the frame and C-x o to switch
+between the split frames, so you can follow the file and easily modify
+the app without excessive scrolling.
+
+#+begin_src R :results none
+  ui <- fluidPage(
+    sidebarLayout(
+      sidebarPanel(
+        selectInput(inputId="x", label="X-var", choices=names(mtcars)),
+        selectInput(inputId="y", label="Y-var", choices=names(mtcars))
+      ),
+
+      mainPanel(
+        plotOutput("plot_out")
+      )
+    )
+  )
+
+  server <- function(input, output) {
+    output$plot_out <- output$plot_out <- renderPlot({
+      plot(x=mtcars[,input$x], y=mtcars[,input$y])
+    })
+
+    onSessionEnded(function() {stopApp()})
+  }
+
+  shinyApp(ui=ui, server=server)
+#+end_src
+
+* References
+** Sources
+[fn:1] - An article about the benefits and best practices of using
+interactive dashboards
+
+Sharma, A. (2021, June 28). Why Use Interactive Financial Dashboards
+for Reporting? A Complete Guide. Retrieved April 25, 2023, from
+https://www.dataversity.net/why-use-interactive-financial-dashboards-for-reporting-a-complete-guide/
+
+[fn:2] - Book on Shiny
+Wickham, H. (2021, April). /Mastering Shiny/. https://mastering-shiny.org/
+
+** Software
+R 4.1.2 [Computer software]. (2021). Retrieved from
+https://www.R-project.org/R
+
+
+R 4.2.2 [Computer software]. (2021). Retrieved from
+https://www.R-project.org/R
+
+
+GNU Emacs 27.2 [Computer software]. (2021). Retrieved from
+https://ftp.gnu.org/gnu/emacs/windows/
+
+* Notes
+[fn:3]
+We will not be using the ~session~ functionality for this assignment,
+but it is necessary when dealing with concurrent users. We wanted to
+keep the assignment simple in order to avoid technical difficulties
+that abounded when Dr. Birkenkrahe did his class lecture on ~shiny~
+in the fall.
+
+[fn:4]
+A consequence of ~shiny~ using the ~identical~ function to check for
+invalidation is that data structures of which ~identical~ doesn't have
+a method for do not behave properly as reactive variables. This can be
+resolved by adding a method to ~identical~ for said data type using
+base R functionality for adding methods.
